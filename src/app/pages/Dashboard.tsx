@@ -4,10 +4,13 @@ import { Sidebar } from '../components/Sidebar';
 import { GlassCard } from '../components/GlassCard';
 import { WeatherWidget } from '../components/WeatherWidget';
 import { CurrencyConverter } from '../components/CurrencyConverter';
+import { useUser } from '../../context/UserContext';
 import { PlusCircle, MapPin, DollarSign, Calendar, TrendingUp, Sparkles, Users, Clock } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export function Dashboard() {
+  const { user } = useUser();
+
   const upcomingTrips = [
     {
       id: 1,
@@ -57,8 +60,8 @@ export function Dashboard() {
       <main className="ml-64 pt-20 p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">Welcome back, Alex!</h1>
+            <div className="pl-1">
+              <h1 className="text-4xl font-bold mb-2">Welcome back, {user.name.split(' ')[0]}!</h1>
               <p className="text-muted-foreground">Ready to plan your next adventure?</p>
             </div>
             <Link
@@ -230,7 +233,7 @@ export function Dashboard() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                     <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <h3 className="font-bold mb-1">{dest.name}</h3>
+                      <h3 className="font-bold text-white mb-1">{dest.name}</h3>
                       <p className="text-sm text-gray-300">{dest.country}</p>
                     </div>
                   </div>
