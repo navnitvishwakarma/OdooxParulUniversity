@@ -24,6 +24,7 @@ export function Dashboard() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [selectedAIDestination, setSelectedAIDestination] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -75,7 +76,10 @@ export function Dashboard() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setIsAIModalOpen(true)}
+                onClick={() => {
+                  setSelectedAIDestination(undefined);
+                  setIsAIModalOpen(true);
+                }}
                 className="flex items-center gap-2 bg-white/50 dark:bg-black/20 backdrop-blur-xl border border-primary/20 px-6 py-3 rounded-xl hover:bg-primary/5 transition-all group"
               >
                 <Sparkles className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
@@ -231,17 +235,26 @@ export function Dashboard() {
 
             <div>
               <h2 className="text-2xl font-bold mb-6">AI Suggestions</h2>
-              <GlassCard className="p-6 bg-gradient-to-br from-primary/10 to-secondary/10">
+              <GlassCard className="p-6 bg-gradient-to-br from-primary/10 to-secondary/10 hover:shadow-lg transition-all cursor-pointer" onClick={() => {
+                const dest = trips.length > 0 ? trips[0].name.replace(' Trip', '').replace(' (Joined)', '') : 'Paris';
+                setSelectedAIDestination(dest);
+                setIsAIModalOpen(true);
+              }}>
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="bg-gradient-to-br from-primary to-secondary p-2 rounded-lg">
+                  <div className="bg-gradient-to-br from-primary to-secondary p-2 rounded-lg shrink-0">
                     <Sparkles className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold mb-2">Perfect Time to Visit Tokyo</h3>
+                    <h3 className="font-bold mb-2">
+                      Perfect Time to Visit {trips.length > 0 ? trips[0].name.replace(' Trip', '') : 'Paris'}
+                    </h3>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Based on your preferences, June offers great weather and lower prices for Tokyo.
+                      {trips.length > 0 
+                        ? `Based on your upcoming plans for ${trips[0].name}, we recommend checking local weather and packing accordingly. Want a full AI itinerary?`
+                        : `Based on your preferences, spring offers great weather and lower prices for Paris.`
+                      }
                     </p>
-                    <button className="text-sm text-primary hover:underline">Learn more →</button>
+                    <button className="text-sm text-primary hover:underline font-medium">Plan with AI →</button>
                   </div>
                 </div>
               </GlassCard>
@@ -277,6 +290,7 @@ export function Dashboard() {
       <AIAssistantModal 
         isOpen={isAIModalOpen} 
         onClose={() => setIsAIModalOpen(false)} 
+        initialDestination={selectedAIDestination}
       />
     </div>
   );

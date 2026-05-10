@@ -62,20 +62,30 @@ export const getTripSuggestions = async (destination: string, days: number, pref
     console.error("Gemini AI Error:", error.message || error);
     let userMessage = "AI generation failed";
 
-    if (error.message?.includes('429')) {
-      userMessage = "AI quota exceeded. Please wait a minute and try again, or use a different API key.";
-    } else if (error.message?.includes('404')) {
+    if (error.message?.includes('429') || error.message?.includes('404')) {
       try {
-        console.log('[AI] Retrying with fallback model: gemini-pro');
-        const fallback = genAI.getGenerativeModel({ model: 'gemini-pro' });
+        console.log('[AI] Retrying with fallback model: gemini-1.5-flash');
+        const fallback = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const result2 = await fallback.generateContent(prompt);
         const text2 = result2.response.text();
         const jsonMatch2 = text2.match(/\{[\s\S]*\}/);
         if (jsonMatch2) return JSON.parse(jsonMatch2[0]);
         return JSON.parse(text2);
       } catch (fallbackErr: any) {
-        console.error('[AI] Fallback also failed:', fallbackErr.message);
-        userMessage = `AI model unavailable. Error: ${fallbackErr.message}`;
+        console.error('[AI] Fallback gemini-1.5-flash failed:', fallbackErr.message);
+        
+        try {
+          console.log('[AI] Retrying with second fallback model: gemini-pro');
+          const fallback2 = genAI.getGenerativeModel({ model: 'gemini-pro' });
+          const result3 = await fallback2.generateContent(prompt);
+          const text3 = result3.response.text();
+          const jsonMatch3 = text3.match(/\{[\s\S]*\}/);
+          if (jsonMatch3) return JSON.parse(jsonMatch3[0]);
+          return JSON.parse(text3);
+        } catch (fallbackErr2: any) {
+           console.error('[AI] Second fallback gemini-pro failed:', fallbackErr2.message);
+           userMessage = error.message?.includes('429') ? "AI quota exceeded. Please use a different API key." : `AI model unavailable. Error: ${fallbackErr2.message}`;
+        }
       }
     } else if (error.message?.includes('403')) {
       userMessage = "AI Access denied. Please check if your Gemini API key is valid.";

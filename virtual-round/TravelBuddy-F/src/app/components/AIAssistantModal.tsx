@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GlassCard } from './GlassCard';
 import { X, Sparkles, Send, Loader2, Calendar, MapPin, Compass } from 'lucide-react';
 import { api } from '../../lib/api';
@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 interface AIAssistantModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialDestination?: string;
 }
 
 interface Suggestion {
@@ -23,12 +24,19 @@ interface Suggestion {
   tips: string[];
 }
 
-export function AIAssistantModal({ isOpen, onClose }: AIAssistantModalProps) {
-  const [destination, setDestination] = useState('');
+export function AIAssistantModal({ isOpen, onClose, initialDestination }: AIAssistantModalProps) {
+  const [destination, setDestination] = useState(initialDestination || '');
   const [days, setDays] = useState('3');
   const [preferences, setPreferences] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<Suggestion | null>(null);
+
+  useEffect(() => {
+    if (isOpen && initialDestination) {
+      setDestination(initialDestination);
+      setResult(null); // Reset results when opening with a new destination
+    }
+  }, [isOpen, initialDestination]);
 
   const fallbacks: Record<string, Suggestion> = {
     'china': {
@@ -79,7 +87,28 @@ export function AIAssistantModal({ isOpen, onClose }: AIAssistantModalProps) {
       if (matchedKey && fallbacks[matchedKey]) {
         setResult(fallbacks[matchedKey]);
       } else {
-        toast.error('Failed to get AI suggestions. Please try again.');
+        // Dynamic fallback for any destination so the UI doesn't break
+        const numDays = parseInt(days) || 3;
+        const mockItinerary = [];
+        for (let i = 1; i <= numDays; i++) {
+          mockItinerary.push({
+            day: i,
+            activities: [
+              { time: 'morning', name: `Explore Central ${destination}`, description: `Start the day exploring the main sights of ${destination}.`, type: 'SIGHTSEEING' },
+              { time: 'afternoon', name: 'Local Museum & Culture', description: 'Dive into the local history and culture.', type: 'CULTURE' },
+              { time: 'evening', name: 'Traditional Dinner', description: 'Enjoy local cuisine at a highly-rated restaurant.', type: 'FOOD' }
+            ]
+          });
+        }
+        setResult({
+          itinerary: mockItinerary,
+          tips: [
+            `Check the local weather forecast for ${destination} before packing.`,
+            'Book major attractions in advance to avoid long lines.',
+            'Keep a digital copy of your travel documents.'
+          ]
+        });
+        toast.info('Using offline fallback itinerary due to AI server limits.');
       }
     } finally {
       setIsLoading(false);
