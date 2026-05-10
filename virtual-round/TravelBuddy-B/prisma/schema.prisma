@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+}
+
+model User {
+  id                String             @id @default(uuid()) @db.Uuid
+  name              String             @db.VarChar(100)
+  email             String             @unique @db.VarChar(255)
+  avatar_url        String?
+  phone             String?            @db.VarChar(20)
+  location          String?            @db.VarChar(100)
+  bio               String?            @db.Text
+  language          String?            @db.VarChar(10)
+  role              Role               @default(USER)
+  created_at        DateTime           @default(now())
+  
+  trips             Trip[]
+  savedDestinations SavedDestination[]
+
+  @@map("users")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Trip {
+  id              String         @id @default(uuid()) @db.Uuid
+  user_id         String         @db.Uuid
+  name            String         @db.VarChar(150)
+  description     String?
+  cover_photo_url String?
+  start_date      DateTime?      @db.Date
+  end_date        DateTime?      @db.Date
+  is_public       Boolean        @default(false)
+  share_token     String?        @unique @db.VarChar(64)
+  total_budget    Decimal?       @db.Decimal(10, 2)
+  created_at      DateTime       @default(now())
+
+  user            User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  stops           Stop[]
+  budgetItems     BudgetItem[]
+  checklistItems  ChecklistItem[]
+  notes           Note[]
+
+  @@map("trips")
+}
+
+model City {
+  id               String             @id @default(uuid()) @db.Uuid
+  name             String             @db.VarChar(100)
+  country          String             @db.VarChar(100)
+  region           String?            @db.VarChar(100)
+  cost_index       Decimal?           @db.Decimal(5, 2)
+  popularity_score Int?
+  image_url        String?
+  lat              Decimal?           @db.Decimal(9, 6)
+  lng              Decimal?           @db.Decimal(9, 6)
+
+  stops            Stop[]
+  activities       Activity[]
+  savedByUsers     SavedDestination[]
+
+  @@map("cities")
+}
+
+model Stop {
+  id             String          @id @default(uuid()) @db.Uuid
+  trip_id        String          @db.Uuid
+  city_id        String          @db.Uuid
+  arrival_date   DateTime?       @db.Date
+  departure_date DateTime?       @db.Date
+  order_index    Int
+  notes          String?
+
+  trip           Trip            @relation(fields: [trip_id], references: [id], onDelete: Cascade)
+  city           City            @relation(fields: [city_id], references: [id], onDelete: Cascade)
+  stopActivities StopActivity[]
+  budgetItems    BudgetItem[]
+  tripNotes      Note[]
+
+  @@map("stops")
+}
+
+model Activity {
+  id             String         @id @default(uuid()) @db.Uuid
+  city_id        String         @db.Uuid
+  name           String         @db.VarChar(150)
+  type           ActivityType
+  description    String?
+  image_url      String?
+  estimated_cost Decimal?       @db.Decimal(10, 2)
+  duration_hours Decimal?       @db.Decimal(4, 1)
+
+  city           City           @relation(fields: [city_id], references: [id], onDelete: Cascade)
+  stopActivities StopActivity[]
+
+  @@map("activities")
+}
+
+enum ActivityType {
+  SIGHTSEEING
+  FOOD
+  ADVENTURE
+  CULTURE
+  NIGHTLIFE
+  OTHER
+}
+
+model StopActivity {
+  id             String    @id @default(uuid()) @db.Uuid
+  stop_id        String    @db.Uuid
+  activity_id    String    @db.Uuid
+  scheduled_time DateTime? @db.Time
+  actual_cost    Decimal?  @db.Decimal(10, 2)
+  notes          String?
+
+  stop           Stop      @relation(fields: [stop_id], references: [id], onDelete: Cascade)
+  activity       Activity  @relation(fields: [activity_id], references: [id], onDelete: Cascade)
+
+  @@map("stop_activities")
+}
+
+model BudgetItem {
+  id       String         @id @default(uuid()) @db.Uuid
+  trip_id  String         @db.Uuid
+  stop_id  String?        @db.Uuid
+  category BudgetCategory
+  label    String         @db.VarChar(200)
+  amount   Decimal        @db.Decimal(10, 2)
+  currency String         @default("USD") @db.Char(3)
+
+  trip     Trip           @relation(fields: [trip_id], references: [id], onDelete: Cascade)
+  stop     Stop?          @relation(fields: [stop_id], references: [id], onDelete: SetNull)
+
+  @@map("budget_items")
+}
+
+enum BudgetCategory {
+  TRANSPORT
+  STAY
+  FOOD
+  ACTIVITY
+  OTHER
+}
+
+model ChecklistItem {
+  id        String            @id @default(uuid()) @db.Uuid
+  trip_id   String            @db.Uuid
+  label     String            @db.VarChar(200)
+  category  ChecklistCategory
+  is_packed Boolean           @default(false)
+
+  trip      Trip              @relation(fields: [trip_id], references: [id], onDelete: Cascade)
+
+  @@map("checklist_items")
+}
+
+enum ChecklistCategory {
+  CLOTHING
+  DOCUMENTS
+  ELECTRONICS
+  OTHER
+}
+
+model Note {
+  id         String   @id @default(uuid()) @db.Uuid
+  trip_id    String   @db.Uuid
+  stop_id    String?  @db.Uuid
+  content    String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  trip       Trip     @relation(fields: [trip_id], references: [id], onDelete: Cascade)
+  stop       Stop?    @relation(fields: [stop_id], references: [id], onDelete: SetNull)
+
+  @@map("notes")
+}
+
+model SavedDestination {
+  id       String   @id @default(uuid()) @db.Uuid
+  user_id  String   @db.Uuid
+  city_id  String   @db.Uuid
+  saved_at DateTime @default(now())
+
+  user     User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  city     City     @relation(fields: [city_id], references: [id], onDelete: Cascade)
+
+  @@map("saved_destinations")
+}
