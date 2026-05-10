@@ -71,8 +71,8 @@ export function ExploreAdventures() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-10">
             <div>
-              <h1 className="text-4xl font-bold mb-2">Community Trips</h1>
-              <p className="text-muted-foreground">Find trip partners and discover new horizons from our global community</p>
+              <h1 className="text-4xl font-bold mb-2">Explore Vadodara Trips</h1>
+              <p className="text-muted-foreground">Find trip partners and discover new horizons from our local community in Vadodara</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="bg-primary/20 px-4 py-2 rounded-xl text-primary font-bold border border-primary/20">
@@ -183,8 +183,8 @@ export function ExploreAdventures() {
           {trips.length === 0 && !isLoading && (
             <div className="text-center py-24">
               <Users className="w-20 h-20 mx-auto mb-6 text-muted-foreground opacity-20" />
-              <h2 className="text-2xl font-bold mb-2">No public adventures yet</h2>
-              <p className="text-muted-foreground">Be the first to share your trip with the world!</p>
+              <h2 className="text-2xl font-bold mb-2">No Vadodara trips yet</h2>
+              <p className="text-muted-foreground">Be the first to share your Vadodara trip with the community!</p>
             </div>
           )}
         </div>

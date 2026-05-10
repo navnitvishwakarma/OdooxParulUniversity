@@ -6,8 +6,10 @@ import { Navbar } from '../components/Navbar';
 import { Sidebar } from '../components/Sidebar';
 import { GlassCard } from '../components/GlassCard';
 import { CollaborationIndicator } from '../components/CollaborationIndicator';
+import { FloatingGradient } from '../components/FloatingGradient';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
-import { MapPin, Plus, Clock, DollarSign, Users, Share2, Edit, Trash2, GripVertical, Loader2, Sparkles, Globe, Lock, Package } from 'lucide-react';
+import { MapPin, Plus, Clock, DollarSign, Users, Share2, Edit, Trash2, GripVertical, Loader2, Sparkles, Globe, Lock, Package, Calendar, ArrowLeft, Navigation, Eye } from 'lucide-react';
+import { motion } from 'motion/react';
 import { api } from '../../lib/api';
 import { toast } from 'sonner';
 
@@ -76,47 +78,56 @@ function DraggableActivity({ stopActivity, index, moveActivity, onDelete }: any)
     ? new Date(stopActivity.scheduled_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
     : 'Not set';
 
+  const typeColors: Record<string, string> = {
+    SIGHTSEEING: 'bg-blue-500/15 text-blue-400 border-blue-500/20',
+    FOOD: 'bg-orange-500/15 text-orange-400 border-orange-500/20',
+    ADVENTURE: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
+    CULTURE: 'bg-purple-500/15 text-purple-400 border-purple-500/20',
+    NIGHTLIFE: 'bg-pink-500/15 text-pink-400 border-pink-500/20',
+    OTHER: 'bg-muted text-muted-foreground border-border',
+  };
+
   return (
     <div ref={(node) => drag(drop(node))} style={{ opacity: isDragging ? 0.5 : 1 }}>
-      <GlassCard className="p-4 mb-3 cursor-move hover:bg-white/10 transition-all">
-        <div className="flex items-start gap-4">
-          <GripVertical className="w-5 h-5 text-muted-foreground mt-1" />
-          <div className="flex-1">
+      <GlassCard className="p-4 mb-3 cursor-move hover:bg-white/10 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 group/card">
+        <div className="flex items-start gap-3">
+          <GripVertical className="w-4 h-4 text-muted-foreground/40 group-hover/card:text-muted-foreground mt-1 transition-colors" />
+          <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <h4 className="font-bold mb-1">{activity.name}</h4>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
+                <h4 className="font-bold mb-1.5 text-sm">{activity.name}</h4>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1 bg-muted/50 px-2 py-0.5 rounded-md">
+                    <Clock className="w-3 h-3" />
                     {timeStr}
                   </div>
                   {activity.duration_hours && (
                     <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
+                      <Clock className="w-3 h-3" />
                       {activity.duration_hours}h
                     </div>
                   )}
-                  {activity.estimated_cost && (
-                    <div className="flex items-center gap-1 text-accent">
-                      <DollarSign className="w-4 h-4" />
+                  {activity.estimated_cost > 0 && (
+                    <div className="flex items-center gap-1 text-accent font-medium">
+                      <DollarSign className="w-3 h-3" />
                       {activity.estimated_cost}
                     </div>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                  <Edit className="w-4 h-4" />
+              <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+                  <Edit className="w-3.5 h-3.5" />
                 </button>
                 <button 
                   onClick={() => onDelete(stopActivity.id)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors text-destructive"
+                  className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-destructive"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
-            <div className="inline-block px-3 py-1 bg-primary/20 text-primary text-xs rounded-full capitalize">
+            <div className={`inline-block px-2.5 py-0.5 text-[10px] rounded-full capitalize font-medium border ${typeColors[activity.type?.toUpperCase()] || typeColors.OTHER}`}>
               {activity.type}
             </div>
           </div>
@@ -136,6 +147,16 @@ export function ItineraryBuilder() {
   const [nearbyPlaces, setNearbyPlaces] = useState<any[]>([]);
   const [isNearbyLoading, setIsNearbyLoading] = useState(false);
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
+  
+  const [isAddDestinationModalOpen, setIsAddDestinationModalOpen] = useState(false);
+  const [newDestinationQuery, setNewDestinationQuery] = useState("");
+  const [isAddingDestination, setIsAddingDestination] = useState(false);
+
+  // IMPORTANT: All hooks must be called before any conditional returns
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+  });
 
   const VADODARA_GEMS = [
     { name: "Laxmi Vilas Palace", lat: 22.2775, lng: 73.1897 },
@@ -244,6 +265,49 @@ export function ItineraryBuilder() {
     }
   };
 
+  const handleInvite = () => {
+    const inviteLink = `${window.location.origin}/share/${id}`;
+    navigator.clipboard.writeText(inviteLink);
+    toast.success("Invite link copied to clipboard!");
+  };
+
+  const handleAddDestination = () => {
+    setIsAddDestinationModalOpen(true);
+  };
+
+  const submitAddDestination = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDestinationQuery.trim()) return;
+
+    try {
+      setIsAddingDestination(true);
+      // 1. Search for the city
+      const { data: cities } = await api.get(`/cities?q=${encodeURIComponent(newDestinationQuery)}`);
+      if (!cities || cities.length === 0) {
+        toast.error(`Could not find city: ${newDestinationQuery}`);
+        setIsAddingDestination(false);
+        return;
+      }
+
+      // 2. Add the first matched city as a stop
+      const cityId = cities[0].id;
+      await api.post(`/trips/${id}/stops`, {
+        city_id: cityId,
+        arrival_date: new Date().toISOString(),
+      });
+      
+      toast.success(`${cities[0].name} added to itinerary!`);
+      setIsAddDestinationModalOpen(false);
+      setNewDestinationQuery("");
+      fetchTrip(); // Refresh the itinerary
+    } catch (err) {
+      console.error("Failed to add destination:", err);
+      toast.error("Failed to add destination. Please try again.");
+    } finally {
+      setIsAddingDestination(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -257,87 +321,151 @@ export function ItineraryBuilder() {
   const startDateStr = trip.start_date ? new Date(trip.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Not set';
   const endDateStr = trip.end_date ? new Date(trip.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
 
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  });
-
   const mapCenter = {
     lat: 22.3072, // Default to Vadodara/Gujarat area if no stops
     lng: 73.1812
   };
+
+  const totalActivities = trip.stops.reduce((sum, s) => sum + s.stop_activities.length, 0);
+  const coverImage = trip.cover_photo_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200';
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="min-h-screen">
         <Navbar />
         <Sidebar />
+        <FloatingGradient />
 
-        <main className="ml-64 px-8 pb-8 pt-28">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-4xl font-bold">{trip.name}</h1>
+        <main className="ml-64 pb-8 pt-20">
+          {/* Hero Cover Banner */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="relative h-64 overflow-hidden"
+          >
+            <img src={coverImage} alt={trip.name} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/10" />
+            
+            {/* Back Button */}
+            <Link to="/dashboard" className="absolute top-6 left-8 flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md text-white rounded-full text-sm hover:bg-black/60 transition-all">
+              <ArrowLeft className="w-4 h-4" /> Back
+            </Link>
+
+            {/* Hero Content Overlay */}
+            <div className="absolute bottom-0 left-0 right-0 px-8 pb-6">
+              <div className="max-w-7xl mx-auto flex items-end justify-between">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h1 className="text-4xl font-bold text-white drop-shadow-lg">{trip.name}</h1>
+                    <button 
+                      onClick={toggleVisibility}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-md transition-all border ${
+                        trip.is_public 
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' 
+                          : 'bg-white/10 text-white/70 border-white/20'
+                      }`}
+                    >
+                      {trip.is_public ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                      {trip.is_public ? 'Public' : 'Private'}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5 text-white/80 text-sm">
+                      <Calendar className="w-4 h-4" />
+                      {startDateStr}{endDateStr && ` — ${endDateStr}`}
+                    </div>
+                    <div className="h-4 w-px bg-white/30" />
+                    <div className="flex items-center gap-1.5 text-white/80 text-sm">
+                      <MapPin className="w-4 h-4" /> {trip.stops.length} cities
+                    </div>
+                    <div className="h-4 w-px bg-white/30" />
+                    <div className="flex items-center gap-1.5 text-white/80 text-sm">
+                      <Eye className="w-4 h-4" /> {totalActivities} activities
+                    </div>
+                  </div>
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex items-center gap-3">
                   <button 
-                    onClick={toggleVisibility}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all border ${
-                      trip.is_public 
-                        ? 'bg-primary/10 text-primary border-primary/20' 
-                        : 'bg-muted/10 text-muted-foreground border-muted/20'
-                    }`}
+                    onClick={handleAiSuggest}
+                    disabled={isAiLoading}
+                    className="flex items-center gap-2 bg-gradient-to-r from-accent to-primary px-5 py-2.5 rounded-xl text-white hover:opacity-90 transition-all disabled:opacity-70 shadow-lg shadow-primary/20 text-sm font-medium"
                   >
-                    {trip.is_public ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                    {trip.is_public ? 'Public' : 'Private'}
+                    {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    AI Suggest
                   </button>
-                </div>
-                <div className="flex items-center gap-4">
-                  <p className="text-muted-foreground">{startDateStr} {endDateStr && ` - ${endDateStr}`}</p>
-                  <CollaborationIndicator users={collaborators} />
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={handleAiSuggest}
-                  disabled={isAiLoading}
-                  className="flex items-center gap-2 bg-gradient-to-r from-accent to-primary px-4 py-2 rounded-xl text-white hover:opacity-90 transition-all disabled:opacity-70"
-                >
-                  {isAiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                  AI Suggest
-                </button>
-                <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-xl hover:bg-white/5 transition-all">
-                  <Users className="w-5 h-5" />
-                  Invite
-                </button>
-                <button className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary px-6 py-2 rounded-xl text-white hover:opacity-90 transition-all">
-                  <Share2 className="w-5 h-5" />
-                  Share
-                </button>
+                  <button 
+                    onClick={handleInvite}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all text-sm font-medium"
+                  >
+                    <Users className="w-4 h-4" /> Invite
+                  </button>
+                  <button className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary px-5 py-2.5 rounded-xl text-white hover:opacity-90 transition-all shadow-lg shadow-primary/20 text-sm font-medium">
+                    <Share2 className="w-4 h-4" /> Share
+                  </button>
+                </motion.div>
               </div>
             </div>
+          </motion.div>
+
+          {/* Collaborators Bar */}
+          <div className="px-8">
+            <div className="max-w-7xl mx-auto">
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="flex items-center justify-between py-4 border-b border-border mb-8">
+                <CollaborationIndicator users={collaborators} />
+                {trip.description && <p className="text-sm text-muted-foreground max-w-md truncate">{trip.description}</p>}
+              </motion.div>
+            </div>
+          </div>
+
+          <div className="px-8">
+          <div className="max-w-7xl mx-auto">
 
             <div className="grid lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 space-y-6">
+              <div className="lg:col-span-2 space-y-0">
                 {trip.stops.map((stop, stopIndex) => (
-                  <div key={stop.id}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-bold">{stop.city.name}</h2>
-                        <button 
-                          onClick={() => handleFetchNearby(stop)}
-                          className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full transition-all text-muted-foreground hover:text-foreground"
-                        >
-                          <MapPin className="w-3 h-3" />
-                          Explore Nearby
-                        </button>
+                  <motion.div
+                    key={stop.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + stopIndex * 0.15 }}
+                    className="relative"
+                  >
+                    {/* Timeline connector */}
+                    {stopIndex < trip.stops.length - 1 && (
+                      <div className="absolute left-5 top-16 bottom-0 w-0.5 bg-gradient-to-b from-primary/40 to-primary/10" />
+                    )}
+
+                    {/* Stop Header */}
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="relative z-10 shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-primary/30">
+                          {stopIndex + 1}
+                        </div>
                       </div>
-                      <span className="text-muted-foreground">
-                        {stop.arrival_date ? new Date(stop.arrival_date).toLocaleDateString() : `Stop ${stopIndex + 1}`}
-                      </span>
+                      <div className="flex-1 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <h2 className="text-2xl font-bold">{stop.city.name}</h2>
+                          <span className="text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full">{stop.city.country}</span>
+                          <button 
+                            onClick={() => handleFetchNearby(stop)}
+                            className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-full transition-all text-primary font-medium"
+                          >
+                            <Navigation className="w-3 h-3" />
+                            Explore Nearby
+                          </button>
+                        </div>
+                        <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {stop.arrival_date ? new Date(stop.arrival_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : `Stop ${stopIndex + 1}`}
+                        </span>
+                      </div>
                     </div>
 
+                    {/* Nearby Places */}
                     {selectedStopId === stop.id && nearbyPlaces.length > 0 && (
-                      <div className="mb-6 animate-in slide-in-from-left duration-300">
+                      <div className="ml-14 mb-6 animate-in slide-in-from-left duration-300">
                         <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
                           <Sparkles className="w-4 h-4 text-accent" />
                           Popular Nearby {stop.city.name}
@@ -361,7 +489,8 @@ export function ItineraryBuilder() {
                       </div>
                     )}
 
-                    <div className="mb-4">
+                    {/* Activities */}
+                    <div className="ml-14 mb-4">
                       {stop.stop_activities.length > 0 ? (
                         stop.stop_activities.map((sa, actIndex) => (
                           <DraggableActivity
@@ -373,129 +502,140 @@ export function ItineraryBuilder() {
                           />
                         ))
                       ) : (
-                        <p className="text-sm text-muted-foreground text-center py-4">No activities planned for this stop yet.</p>
+                        <GlassCard className="p-6 text-center border-dashed">
+                          <Clock className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                          <p className="text-sm text-muted-foreground">No activities planned for this stop yet.</p>
+                        </GlassCard>
                       )}
                     </div>
 
-                    <button className="w-full border-2 border-dashed border-border rounded-xl py-4 hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground">
-                      <Plus className="w-5 h-5" />
+                    <button className="ml-14 w-[calc(100%-3.5rem)] border-2 border-dashed border-border rounded-xl py-3 hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2 text-muted-foreground hover:text-primary text-sm mb-8">
+                      <Plus className="w-4 h-4" />
                       Add Activity
                     </button>
-                  </div>
+                  </motion.div>
                 ))}
 
                 {trip.stops.length === 0 && (
-                  <div className="text-center py-12">
-                    <MapPin className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                    <p className="text-muted-foreground">No cities added to this trip yet.</p>
-                  </div>
+                  <GlassCard className="p-12 text-center">
+                    <MapPin className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                    <h3 className="text-xl font-bold mb-2">No destinations yet</h3>
+                    <p className="text-muted-foreground mb-6">Start building your itinerary by adding your first destination.</p>
+                  </GlassCard>
                 )}
 
-                <button className="w-full bg-gradient-to-r from-primary/20 to-secondary/20 border border-primary/30 rounded-xl py-4 hover:opacity-80 transition-all flex items-center justify-center gap-2">
-                  <Plus className="w-5 h-5" />
+                <motion.button
+                  onClick={handleAddDestination}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="w-full bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 rounded-2xl py-5 hover:from-primary/20 hover:to-secondary/20 transition-all flex items-center justify-center gap-2 text-sm font-medium group"
+                >
+                  <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
                   Add Destination
-                </button>
+                </motion.button>
               </div>
 
-              <div className="space-y-6">
-                <GlassCard className="overflow-hidden p-0 border-0 h-64">
-                  {isLoaded ? (
-                    <GoogleMap
-                      mapContainerStyle={{ width: '100%', height: '100%' }}
-                      center={mapCenter}
-                      zoom={11}
-                      options={{
-                        disableDefaultUI: true,
-                        styles: [
-                          {
-                            "elementType": "geometry",
-                            "stylers": [{ "color": "#242f3e" }]
-                          },
-                          {
-                            "elementType": "labels.text.fill",
-                            "stylers": [{ "color": "#746855" }]
-                          },
-                          {
-                            "elementType": "labels.text.stroke",
-                            "stylers": [{ "color": "#242f3e" }]
-                          },
-                          {
-                            "featureType": "administrative.locality",
-                            "elementType": "labels.text.fill",
-                            "stylers": [{ "color": "#d59563" }]
-                          },
-                          {
-                            "featureType": "water",
-                            "elementType": "geometry",
-                            "stylers": [{ "color": "#17263c" }]
-                          }
-                        ]
-                      }}
-                    >
-                      <Marker position={mapCenter} />
-                      {VADODARA_GEMS.map((gem, idx) => (
-                        <Marker 
-                          key={idx} 
-                          position={{ lat: gem.lat, lng: gem.lng }} 
-                          title={gem.name}
-                          icon={{
-                            url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-                          }}
-                        />
-                      ))}
-                    </GoogleMap>
-                  ) : (
-                    <div className="h-full bg-muted flex items-center justify-center">
-                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                    </div>
-                  )}
-                </GlassCard>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="space-y-6">
+                {/* Map Card */}
+                <div className="relative rounded-2xl overflow-hidden">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-secondary/30 rounded-2xl blur-sm opacity-60" />
+                  <GlassCard className="relative overflow-hidden p-0 border-0 h-72">
+                    {isLoaded ? (
+                      <GoogleMap
+                        mapContainerStyle={{ width: '100%', height: '100%' }}
+                        center={mapCenter}
+                        zoom={11}
+                        options={{
+                          disableDefaultUI: true,
+                          styles: [
+                            { "elementType": "geometry", "stylers": [{ "color": "#242f3e" }] },
+                            { "elementType": "labels.text.fill", "stylers": [{ "color": "#746855" }] },
+                            { "elementType": "labels.text.stroke", "stylers": [{ "color": "#242f3e" }] },
+                            { "featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [{ "color": "#d59563" }] },
+                            { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#17263c" }] }
+                          ]
+                        }}
+                      >
+                        <Marker position={mapCenter} />
+                        {VADODARA_GEMS.map((gem, idx) => (
+                          <Marker key={idx} position={{ lat: gem.lat, lng: gem.lng }} title={gem.name}
+                            icon={{ url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" }}
+                          />
+                        ))}
+                      </GoogleMap>
+                    ) : (
+                      <div className="h-full bg-muted flex items-center justify-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                      </div>
+                    )}
+                  </GlassCard>
+                </div>
 
+                {/* Trip Summary */}
                 <GlassCard className="p-6">
-                  <h3 className="font-bold mb-4">Trip Summary</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Total Cities</span>
-                      <span className="font-bold">{trip.stops.length}</span>
+                  <h3 className="font-bold mb-5 flex items-center gap-2">
+                    <div className="w-1.5 h-5 bg-gradient-to-b from-primary to-secondary rounded-full" />
+                    Trip Summary
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3 mb-5">
+                    <div className="bg-primary/10 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-primary">{trip.stops.length}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">Cities</div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Activities</span>
-                      <span className="font-bold">
-                        {trip.stops.reduce((sum, s) => sum + s.stop_activities.length, 0)}
-                      </span>
+                    <div className="bg-secondary/10 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-secondary">{totalActivities}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">Activities</div>
                     </div>
-                    
-                    <div className="pt-4 border-t border-border space-y-2">
-                      <Link 
-                        to={`/packing/${id}`}
-                        className="flex items-center justify-between p-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-all group"
-                      >
-                        <div className="flex items-center gap-2">
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Link 
+                      to={`/packing/${id}`}
+                      className="flex items-center justify-between p-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-all group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
                           <Package className="w-4 h-4 text-primary" />
-                          <span className="text-sm font-medium">Packing Checklist</span>
                         </div>
-                        <span className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                      </Link>
-                      <Link 
-                        to={`/budget/${id}`}
-                        className="flex items-center justify-between p-3 rounded-xl bg-accent/5 hover:bg-accent/10 transition-all group"
-                      >
-                        <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Packing Checklist</span>
+                      </div>
+                      <span className="text-primary opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">→</span>
+                    </Link>
+                    <Link 
+                      to={`/budget/${id}`}
+                      className="flex items-center justify-between p-3 rounded-xl bg-accent/5 hover:bg-accent/10 transition-all group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
                           <DollarSign className="w-4 h-4 text-accent" />
-                          <span className="text-sm font-medium">Budget & Analytics</span>
                         </div>
-                        <span className="text-accent opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                      </Link>
-                    </div>
+                        <span className="text-sm font-medium">Budget & Analytics</span>
+                      </div>
+                      <span className="text-accent opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">→</span>
+                    </Link>
                   </div>
                 </GlassCard>
 
-                <GlassCard className="p-6">
-                  <h3 className="font-bold mb-4 text-primary flex items-center gap-2">
-                    <Sparkles className="w-5 h-5" />
-                    AI Insights
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">Gemini AI is ready to help you plan. Click the AI Suggest button for custom tips!</p>
+                {/* AI Insights */}
+                <GlassCard className="p-6 bg-gradient-to-br from-primary/5 to-secondary/5 border-primary/20">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shrink-0 shadow-lg shadow-primary/20">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold mb-1">AI Insights</h3>
+                      <p className="text-xs text-muted-foreground">Gemini AI is ready to help you plan. Click the AI Suggest button for personalized tips!</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleAiSuggest}
+                    disabled={isAiLoading}
+                    className="w-full mt-2 flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-secondary text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-all disabled:opacity-60"
+                  >
+                    {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    Get AI Suggestions
+                  </button>
                 </GlassCard>
 
                 {aiSuggestions && (
@@ -531,11 +671,57 @@ export function ItineraryBuilder() {
                     )}
                   </GlassCard>
                 )}
-              </div>
+              </motion.div>
             </div>
+          </div>
           </div>
         </main>
       </div>
+
+      {/* Add Destination Modal */}
+      {isAddDestinationModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md"
+          >
+            <GlassCard className="p-6">
+              <h3 className="text-xl font-bold mb-2">Add a Destination</h3>
+              <p className="text-sm text-muted-foreground mb-6">Search for a city to add to your itinerary.</p>
+              
+              <form onSubmit={submitAddDestination}>
+                <input
+                  type="text"
+                  placeholder="e.g., Vadodara, Paris, Tokyo"
+                  value={newDestinationQuery}
+                  onChange={(e) => setNewDestinationQuery(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary mb-6"
+                  autoFocus
+                />
+                
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddDestinationModalOpen(false)}
+                    className="px-4 py-2 rounded-xl text-sm font-medium hover:bg-white/10 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isAddingDestination || !newDestinationQuery.trim()}
+                    className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary px-5 py-2 rounded-xl text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {isAddingDestination ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    Add Stop
+                  </button>
+                </div>
+              </form>
+            </GlassCard>
+          </motion.div>
+        </div>
+      )}
     </DndProvider>
   );
 }
