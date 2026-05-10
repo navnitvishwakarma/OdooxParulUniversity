@@ -57,7 +57,7 @@ export function Dashboard() {
       <Navbar />
       <Sidebar />
 
-      <main className="ml-64 pt-20 p-8">
+      <main className="ml-64 px-8 pb-8 pt-28">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div className="pl-1">

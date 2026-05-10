@@ -56,7 +56,7 @@ export function BudgetAnalytics() {
       <Navbar />
       <Sidebar />
 
-      <main className="ml-64 pt-20 p-8">
+      <main className="ml-64 px-8 pb-8 pt-28">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2">Budget & Analytics</h1>

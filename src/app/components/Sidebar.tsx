@@ -85,12 +85,6 @@ export function Sidebar() {
               <User className="w-5 h-5 group-hover:scale-110 group-hover:text-primary transition-all duration-300" />
               <span className="group-hover:translate-x-1 transition-transform duration-300">{t('sidebar.profile')}</span>
             </Link>
-            <button
-              className="w-full group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground font-medium"
-            >
-              <Settings className="w-5 h-5 group-hover:scale-110 group-hover:text-primary transition-all duration-300" />
-              <span className="group-hover:translate-x-1 transition-transform duration-300">Settings</span>
-            </button>
           </div>
         </div>
       </div>
