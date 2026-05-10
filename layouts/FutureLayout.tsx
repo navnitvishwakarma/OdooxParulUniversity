@@ -45,7 +45,7 @@ export default function FutureLayout({ children }: { children: React.ReactNode }
           <SidebarItem icon={<HomeOutlined />} label="Dashboard" onClick={() => router.push('/explore-3d')} active={pathname === '/explore-3d'} />
           <SidebarItem icon={<CompassOutlined />} label="My Trips" onClick={() => router.push('/trips')} active={pathname === '/trips'} />
           <SidebarItem icon={<PlusCircleOutlined />} label="Create Trip" onClick={() => router.push('/trips/create')} active={pathname === '/trips/create'} />
-          <SidebarItem icon={<BuildOutlined />} label="Itinerary Builder" />
+          <SidebarItem icon={<BuildOutlined />} label="Itinerary Builder" onClick={() => router.push('/itinerary')} active={pathname === '/itinerary'} />
           <SidebarItem icon={<WalletOutlined />} label="Budget" />
           <SidebarItem icon={<CheckSquareOutlined />} label="Packing Checklist" />
           <SidebarItem icon={<FileTextOutlined />} label="Notes" />
