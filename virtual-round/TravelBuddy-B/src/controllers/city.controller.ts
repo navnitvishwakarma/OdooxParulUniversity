@@ -5,7 +5,7 @@ export const searchCities = async (req: Request, res: Response) => {
   try {
     const { q, region } = req.query;
 
-    const cities = await prisma.city.findMany({
+    let cities = await prisma.city.findMany({
       where: {
         ...(q && { name: { contains: q as string, mode: 'insensitive' } }),
         ...(region && { region: region as string }),
@@ -13,6 +13,18 @@ export const searchCities = async (req: Request, res: Response) => {
       orderBy: { popularity_score: 'desc' },
       take: 20,
     });
+
+    if (cities.length === 0 && q && typeof q === 'string') {
+      const newCity = await prisma.city.create({
+        data: {
+          name: q.charAt(0).toUpperCase() + q.slice(1),
+          country: 'India',
+          popularity_score: 50,
+          image_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800'
+        }
+      });
+      cities = [newCity];
+    }
 
     res.json(cities);
   } catch (error) {

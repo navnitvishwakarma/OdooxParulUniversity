@@ -97,7 +97,7 @@ export const getTripById = async (req: Request, res: Response) => {
         stops: {
           include: {
             city: true,
-            stop_activities: {
+            stopActivities: {
               include: {
                 activity: true
               },
@@ -119,13 +119,14 @@ export const getTripById = async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    // Convert Decimals to Numbers for JSON serialization safety
+    // Convert Decimals to Numbers and map stopActivities -> stop_activities for frontend
     const formattedTrip = {
       ...trip,
       total_budget: trip.total_budget ? Number(trip.total_budget) : 0,
       stops: (trip as any).stops.map((stop: any) => ({
         ...stop,
-        stop_activities: stop.stop_activities.map((sa: any) => ({
+        stopActivities: undefined,
+        stop_activities: (stop.stopActivities || []).map((sa: any) => ({
           ...sa,
           activity: {
             ...sa.activity,
@@ -360,12 +361,14 @@ export const reorderStops = async (req: Request, res: Response) => {
 
 export const getPublicTrips = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.sub;
-
     const publicTrips = await prisma.trip.findMany({
       where: {
         is_public: true,
-        NOT: { user_id: userId }
+        OR: [
+          { name: { contains: 'Vadodara', mode: 'insensitive' } },
+          { description: { contains: 'Vadodara', mode: 'insensitive' } },
+          { stops: { some: { city: { name: { contains: 'Vadodara', mode: 'insensitive' } } } } }
+        ]
       },
       include: {
         user: {
