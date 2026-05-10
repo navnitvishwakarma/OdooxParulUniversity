@@ -4,6 +4,20 @@ import { GlassCard } from '../components/GlassCard';
 import { DollarSign, TrendingUp, TrendingDown, AlertCircle, PieChart as PieChartIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl py-3 px-4 shadow-xl">
+        <p className="text-[#94a3b8] text-sm font-medium mb-1">{label}</p>
+        <p className="text-white font-bold">
+          {payload[0].name}: {payload[0].value}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export function BudgetAnalytics() {
   const expenseData = [
     { name: 'Accommodation', value: 1200, color: '#4F46E5' },
@@ -42,7 +56,7 @@ export function BudgetAnalytics() {
       <Navbar />
       <Sidebar />
 
-      <main className="ml-64 pt-20 p-8">
+      <main className="ml-64 px-8 pb-8 pt-28">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2">Budget & Analytics</h1>
@@ -147,15 +161,12 @@ export function BudgetAnalytics() {
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dailySpending}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="day" stroke="rgba(255,255,255,0.5)" />
-                    <YAxis stroke="rgba(255,255,255,0.5)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="day" stroke="var(--muted-foreground)" />
+                    <YAxis stroke="var(--muted-foreground)" />
                     <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '12px',
-                      }}
+                      cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                      content={<CustomTooltip />}
                     />
                     <Bar dataKey="amount" fill="url(#colorGradient)" radius={[8, 8, 0, 0]} />
                     <defs>
@@ -177,16 +188,10 @@ export function BudgetAnalytics() {
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={monthlyTrend}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis dataKey="month" stroke="rgba(255,255,255,0.5)" />
-                      <YAxis stroke="rgba(255,255,255,0.5)" />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          borderRadius: '12px',
-                        }}
-                      />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="month" stroke="var(--muted-foreground)" />
+                      <YAxis stroke="var(--muted-foreground)" />
+                      <Tooltip content={<CustomTooltip />} />
                       <Line
                         type="monotone"
                         dataKey="amount"

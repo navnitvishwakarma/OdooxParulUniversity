@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import Masonry from 'react-responsive-masonry';
 import { Navbar } from '../components/Navbar';
 import { Sidebar } from '../components/Sidebar';
 import { GlassCard } from '../components/GlassCard';
@@ -112,7 +111,7 @@ export function ActivitySearch() {
       <Navbar />
       <Sidebar />
 
-      <main className="ml-64 pt-20 p-8">
+      <main className="ml-64 px-8 pb-8 pt-28">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2">Explore Activities</h1>
@@ -152,9 +151,9 @@ export function ActivitySearch() {
             </div>
           </div>
 
-          <Masonry columnsCount={3} gutter="24px">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredActivities.map((activity) => (
-              <GlassCard key={activity.id} hover className="overflow-hidden group">
+              <GlassCard key={activity.id} hover className="overflow-hidden group flex flex-col">
                 <div className="relative">
                   <img
                     src={activity.image}
@@ -164,17 +163,17 @@ export function ActivitySearch() {
                   <div className="absolute top-4 right-4">
                     <div className="bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-bold">{activity.rating}</span>
+                      <span className="text-sm font-bold text-white">{activity.rating}</span>
                     </div>
                   </div>
                   <div className="absolute top-4 left-4">
-                    <div className="bg-primary/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs">
+                    <div className="bg-primary/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs text-white">
                       {activity.category}
                     </div>
                   </div>
                 </div>
 
-                <div className="p-5">
+                <div className="p-5 flex flex-col flex-1">
                   <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
                     {activity.title}
                   </h3>
@@ -184,7 +183,7 @@ export function ActivitySearch() {
                     <span>{activity.location}</span>
                   </div>
 
-                  <div className="flex items-center gap-4 text-sm mb-4">
+                  <div className="flex items-center gap-4 text-sm mb-4 mt-auto">
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <Clock className="w-4 h-4" />
                       {activity.duration}
@@ -199,14 +198,14 @@ export function ActivitySearch() {
                     {activity.reviews.toLocaleString()} reviews
                   </div>
 
-                  <button className="w-full bg-gradient-to-r from-primary to-secondary py-3 rounded-xl text-white hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                  <button className="w-full bg-gradient-to-r from-primary to-secondary py-3 rounded-xl text-white hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-auto">
                     <Plus className="w-5 h-5" />
                     Add to Trip
                   </button>
                 </div>
               </GlassCard>
             ))}
-          </Masonry>
+          </div>
         </div>
       </main>
     </div>
